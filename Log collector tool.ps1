@@ -1,9 +1,14 @@
-﻿#_V0.5
+﻿#_V0.6
+#Forces powershell to run as an admin
+if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
+{ Start-Process powershell.exe "-NoProfile -Windowstyle Hidden -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
+
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'Error logs collector v.0.5'
+$form.Text = 'Error logs collector v.0.6'
 $form.Size = New-Object System.Drawing.Size(400, 300)
 $form.StartPosition = 'CenterScreen'
 
@@ -66,6 +71,7 @@ $form.Topmost = $true
 
 $form.Add_Shown( { $textBox.Select() })
 $result = $form.ShowDialog()
+Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Force
 
 if ($x -and $x2 -and $x3) {
     Clear-Variable x3
@@ -248,6 +254,7 @@ Function AllTTechLogs {
         } 
         else {
             Add-Content -path $file -Value $Content3
+
         }	
         Add-Content $file -value $content11, "`n"
         Remove-Item "$ErrorPath\temp.txt"
@@ -308,7 +315,6 @@ Function AllTTechLogs {
 
 Function InstallerLogs {
     $LogPath = $x
-    $LogPath = "C:\Users\aes\Desktop\SupportTools\TobiiDynavox_SysInfo_12_8_2020_11_07_15 AM"
     $InstallerLogs = "$LogPath\TOBII_INSTALLER_LOGS\TEMP"
     $ErrorPath = "$LogPath\ErrorLogs"
     if (!(Test-Path "$ErrorPath")) {
