@@ -1,6 +1,7 @@
-<<<<<<< HEAD
-﻿#File version 
-$fileversion = "Troubleshooting 0.200"
+#Author AMMAR ELYAS ammar.elyas@tobiidynavox.com
+
+#File version 
+$fileversion = "Troubleshooting 0.3.ps1"
 
 #Forces powershell to run as an admin
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
@@ -14,6 +15,14 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 $wshell = New-Object -ComObject Wscript.Shell
 $PSScriptRoot
 
+
+Function Write-Log {
+    Param ($Message)
+    $fpath = Get-ChildItem -Path $PSScriptRoot -Filter "$fileversion" -Recurse -erroraction SilentlyContinue | Select-Object -expand Fullname | Split-Path
+    Set-Location $fpath
+    "$(get-date -format "yyyy-MM-dd HH:mm:ss"): $($Message)" | out-file "$fpath\TroubleshootingLog.txt" -Append
+    $OutputBox.AppendText("$Message" + "`r`n" )
+ }
 Function Troubleshoot {
     $outputBox.clear()
  
@@ -26,17 +35,16 @@ Function Troubleshoot {
     $LatestPDKVersion = "1.36.3.0_59107508"
 
     #1 Pinging ET and checking HW & fw
-    $outputbox.appendtext("===============FIRST===============`r`nPinging ET and checking HW model..`r`n")
+    Write-Log -Message "===============FIRST===============`r`nPinging ET and checking HW model.."
     $fpath = Get-ChildItem -Path $PSScriptRoot -Filter "FWUpgrade32.exe" -Recurse -erroraction SilentlyContinue | Select-Object -expand Fullname | Split-Path
     if ($fpath.count -gt 0) {
         Set-Location $fpath
         #Start PDK service
         try {
-            #$outputbox.appendtext("Starting PDK..`r`n")
             $getService = Get-Service -Name '*TobiiIS5*'  | start-Service -PassThru -ErrorAction Ignore
         }
         catch {
-            $outputbox.appendtext("Error starting PDK. Make sure that ET is connected and there is PDK on this device.`r`n")
+            Write-Log -Message "Error starting PDK. Make sure that ET is connected and there is PDK on this device."
         }
         try { 
             $erroractionpreference = "Stop"
@@ -44,21 +52,21 @@ Function Troubleshoot {
             if ($Firmware -match "IS514") {
                 $global:LatestDisplayName = "$PCEyeDisplayName"
                 $global:LatestVersion = "$PCEyeLatestVersion"
-                $outputbox.appendtext("PASS: Connected Eye Tracker is PCEye5`r`n")
+                Write-Log -Message "PASS: Connected Eye Tracker is PCEye5."
             }
             elseif ($Firmware -match "IS502") {
                 $global:LatestDisplayName = "$ISeriesDisplayName"
                 $global:LatestVersion = "$ISeriesLatestVersion"
-                $outputbox.appendtext("PASS: Connected Eye Tracker is I-Series`r`n")
+                Write-Log -Message "PASS: Connected Eye Tracker is I-Series."
             }
         }
         Catch [System.Management.Automation.RemoteException] {
-            write-host("FAIL: No Eye Tracker Connected. Make sure that ET is connected and there is PDK on this device.`r`n")
+            Write-Log -Message "FAIL: No Eye Tracker Connected. Make sure that ET is connected and there is PDK on this device."
         }
     }
 
     #2 Listing Tobii Experience software that installed on this device
-    $outputbox.appendtext("`r`n===============Second===============`r`nChecking installed Eye Tracker software..`r`n")
+    Write-Log -Message "===============SECOND===============`r`nChecking installed Eye Tracker software.."
     $AllListApps = Get-ChildItem -Recurse -Path HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\, HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\, HKLM:\Software\WOW6432Node\Tobii\ | 
     Get-ItemProperty | Where-Object { 
         $_.Displayname -like '*Tobii Experience Software*' -or
@@ -71,35 +79,35 @@ Function Troubleshoot {
         if (($AppLists.count -eq 1) -and ($AppLists -eq $LatestDisplayName)) { 
             $DisplayVersion = $AllListApps.displayversion
             if (($DisplayVersion) -and ($DisplayVersion -eq $LatestVersion)) {
-				$outputbox.appendtext("PASS: Installed $AppLists is correct, $AppLists $DisplayVersion.`r`n")
+				Write-Log -Message "PASS: Installed $AppLists is correct, $AppLists $DisplayVersion."
             }
             else {
-                $outputbox.appendtext("FAIL: $AppLists $DisplayVersion is not the latest. Upgrade the software through Update Notifier.`r`n")
+                Write-Log -Message "FAIL: $AppLists $DisplayVersion is not the latest. Upgrade the software through Update Notifier."
             }
         }
         elseif ($AppLists.count -gt 1) {
-            $outputbox.appendtext("FAIL: Installed ET software on this device are following:`r`n")
+            Write-Log -Message "FAIL: Installed ET software on this device are following:"
             foreach ($L in $AppLists) {
-                $outputbox.appendtext("$L`r`n")
+                Write-Log -Message "$L`r`n"
             }
-            $outputbox.appendtext("Uninstall all sw named above and install only $LatestDisplayName.`r`n")
+            Write-Log -Message "Uninstall all sw named above and install only $LatestDisplayName."
         }
         # Check for Experience app
         $AppPackage = Get-AppxPackage -Name *TobiiAB.TobiiEyeTrackingPortal*
         if ($AppPackage) {
-            $outputbox.appendtext("FAIL: $AppPackage Shall be removed.`r`n")
+            Write-Log -Message "FAIL: $AppPackage Shall be removed."
             $regpaths = "HKLM:\SYSTEM\CurrentControlSet\Services\Tobii Interaction Engine",
             "HKLM:\SYSTEM\CurrentControlSet\Services\Tobii Service",
             "HKLM:\SYSTEM\CurrentControlSet\Services\TobiiGeneric",
             "HKLM:\SYSTEM\CurrentControlSet\Services\TobiiIS5LARGEPCEYE5",
             "HKLM:\SYSTEM\CurrentControlSet\Services\TobiiIS5EYETRACKER5"
             if (test-path $regpaths) {
-                $outputbox.appendtext("FAIL: Delete $regpaths`r`n") 
+                Write-Log -Message "FAIL: Delete $regpaths"
             }
         }
     } 
     elseif (!($AllListApps)) {
-        $outputbox.appendtext("FAIL: NO Eye Tracker SW installed, install $LatestDisplayName`r`n")
+        Write-Log -Message "FAIL: NO Eye Tracker SW installed, install $LatestDisplayName."
     }
 
     $AllTDListApps = (Get-ChildItem -Recurse -Path HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\, HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\, HKLM:\Software\WOW6432Node\Tobii\ | 
@@ -109,11 +117,11 @@ Function Troubleshoot {
         ($_.Displayname -Match "GazeSelection") 
         } | Select-Object Displayname, UninstallString).DisplayName
     if ($AllTDListApps -gt 0) {
-        $outputbox.appendtext("FAIL: $AllTDListApps shall be removed. Uninstall also Tobii Dynavox Eye Tracking and re-install it again.`r`n")
+        Write-Log -Message "FAIL: $AllTDListApps shall be removed. Uninstall also Tobii Dynavox Eye Tracking and re-install it again."
     } 
 
-    #3 Getting Services that installed on this device
-    $outputbox.appendtext("`r`n===============THIRD===============`r`nChecking services..`r`n")
+    #3 Getting installed Services that installed on this device
+    Write-Log -Message "===============THIRD===============`r`nChecking services.."
     $GetService = Get-Service -Name '*Tobii*'
     #Listing all installed Services
     if ($GetService.count -ne 0) {
@@ -132,41 +140,41 @@ Function Troubleshoot {
             $Compares = (Compare-Object -DifferenceObject $GetService -ReferenceObject $ReqService -CaseSensitive -ExcludeDifferent -IncludeEqual | Select-Object InputObject).InputObject
             if ($Compares -eq $ReqService ) {
                 if ($PDKversions -match $LatestPDKVersion) {
-					$outputbox.appendtext("PASS: Latest PDK ($ReqService) $PDKversions is installed`r`n")
+					Write-Log -Message "PASS: Latest PDK ($ReqService) $PDKversions is installed."
                 }
                 else {
-                    $outputbox.appendtext("FAIL: PDK ($ReqService $PDKversions) is not the latest, make sure that $LatestDisplayName is installed.`r`n")
+                    Write-Log -Message "FAIL: PDK ($ReqService $PDKversions) is not the latest, make sure that $LatestDisplayName is installed with $LatestVersion."
                 }
                 $TobiiService = $GetService | Where-Object { $_.Name -eq "Tobii Service" }
                 if ( $TobiiService) {
-                    $outputbox.appendtext("PASS: Tobii Service is installed`r`n")
+                    Write-Log -Message "PASS: Tobii Service is installed."
                 }
                 elseif (!($TobiiService)) {
-                    $outputbox.appendtext("FAIL: Tobii Service is not intsalled. Uninstall Tobii Experince Software and re-install it again.`r`n")
+                    Write-Log -Message "FAIL: Tobii Service is not intsalled. Uninstall Tobii Experince Software and re-install it again."
                 }
                 $ServiceStatus = ($GetService | Where-Object { $_.Status -ne "Running" }).name
                 If ($ServiceStatus) {
                     foreach ($ServiceStatuss in $ServiceStatus) {
-                        $outputbox.appendtext("FAIL: $ServiceStatuss is not running. Open Task Manager and run the service.`r`n")
+                        Write-Log -Message "FAIL: $ServiceStatuss is not running. Open Task Manager and run the service."
                     }
                 }
 				$AvaliablePDK = (Get-Service -DisplayName "*Tobii Runtime Service*").name
                 $ComparesPDK = (Compare-Object -DifferenceObject $AvaliablePDK -ReferenceObject $Compares -CaseSensitive  | Select-Object InputObject).InputObject
                 if (($ComparesPDK)) {
-                    $outputbox.appendtext("FAIL: $ComparesPDK should not be installed. Please remove it!`r`n")
+                    Write-Log -Message "FAIL: $ComparesPDK should not be installed. Please remove it!"
                 }
             } 
             elseif (!($Compares) ) { 
-                $outputbox.appendtext("FAIL: NO PDK INSTALLED. Make sure $LatestDisplayName is installed.`r`n")
+                Write-Log -Message "FAIL: NO PDK INSTALLED. Make sure $LatestDisplayName is installed."
             }
         } 
     } 
     else {
-        $outputbox.appendtext("FAIL: No ET Service found. Make sure $LatestDisplayName is installed.`r`n")
+        Write-Log -Message "FAIL: No ET Service found. Make sure $LatestDisplayName is installed."
     }
 
     #4 Getting Processes that running on this device
-    $outputbox.appendtext("`r`n===============FOURTH===============`r`nChecking processes..`r`n")
+    Write-Log -Message "===============FOURTH===============`r`nChecking processes.."
     $TobiiProcesses = "Tobii.EyeX.Engine", "Tobii.EyeX.Interaction", "Tobii.Service", "TobiiDynavox.EyeAssist.Engine", "TobiiDynavox.EyeAssist.RegionInteraction.Startup", "TobiiDynavox.EyeAssist.Smorgasbord", "TobiiDynavox.EyeAssist.TrayIcon", "TobiiDynavox.EyeTrackingSettings"
     foreach ($TobiiProcess in $TobiiProcesses) {
         Try {
@@ -174,36 +182,36 @@ Function Troubleshoot {
             $GetTobiiProcess = Get-Process $TobiiProcess | Select-Object ProcessName
         }
         catch {
-            $outputbox.appendtext("FAIL: $TobiiProcess is not running. Open Task Manager and run the process.`r`n")
+            Write-Log -Message "FAIL: $TobiiProcess is not running. Open Task Manager and run the process."
         }
     }
 
     #5 Getting drivers that installed on this device
-    $outputbox.appendtext("`r`n===============FIFTH===============`r`nChecking drivers`r`n")
+     Write-Log -Message "===============FIFTH===============`r`nChecking drivers.."
     $TobiiDrivers = Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -match "Tobii" } | Sort-object OriginalFileName -desc | select OriginalFileName, Driver
     if ($TobiiDrivers.count -ne 0) {
         $NewTobiiDrivers = $TobiiDrivers.originalfilename -replace "C:", "" -replace "(?<=\\).+?(?=\\)", "" -replace "\\\\\\", "" 
-        $outputbox.appendtext("Listing all available drivers..`r`n")
+         Write-Log -Message "Listing all available drivers.."
         foreach ($TD in $NewTobiiDrivers) {
-            $outputbox.appendtext("$TD`r`n")
+             Write-Log -Message "$TD"
         }
         $b = $NewTobiiDrivers | select -Unique
         $CompareDrivers = (Compare-Object -ReferenceObject $b -DifferenceObject $NewTobiiDrivers | Select-Object InputObject).InputObject
         if ($CompareDrivers.count -gt 0) {
-            $outputbox.appendtext("FAIL: There are two drivers of $CompareDrivers. Uninstall Tobii Experience Software and re-install it again.`r`n")
+             Write-Log -Message "FAIL: There are two drivers of $CompareDrivers. Uninstall Tobii Experience Software and re-install it again."
         } 
         foreach ($NewTobiiDriver in $NewTobiiDrivers) {
             if (($NewTobiiDriver -match "is") -or ($NewTobiiDriver -match "dmft")) {
-                $outputbox.appendtext("FAIL: $NewTobiiDriver is not belong to this HW! Remove all sw in second step and install only Tobii Experience Software and Tobii Dynavox Eye Tracking.`r`n")
+                 Write-Log -Message "FAIL: $NewTobiiDriver is not belong to this HW! Remove all sw in second step and install only Tobii Experience Software and Tobii Dynavox Eye Tracking."
             }
         }
-        $outputbox.appendtext("`r`nVerify correct Hello Driver with HW..`r`n")
+         Write-Log -Message "Verify correct Hello Driver with HW.."
         foreach ($NewTobiiDriver in $NewTobiiDrivers) {
             if ($NewTobiiDriver -match "318") {
-                $outputbox.appendtext("$NewTobiiDriver belong to PCEye5`r`n")
+                 Write-Log -Message "$NewTobiiDriver belong to PCEye5."
             }
             elseif ($NewTobiiDriver -match "304") {
-                $outputbox.appendtext("$NewTobiiDriver belong to I-Series`r`n")
+                 Write-Log -Message "$NewTobiiDriver belong to I-Series."
             }
         }
     }
@@ -211,24 +219,24 @@ Function Troubleshoot {
     $d = "Tobii Hello Sensor", "Tobii Eye Tracker HID", "Tobii Device"
     $CompareSignedDrivers = (Compare-Object -ReferenceObject $d -DifferenceObject $SignedDrivers | Where-Object { $_.SideIndicator -eq "<=" }).InputObject
     if ($CompareSignedDrivers.count -gt 0) {
-        $outputbox.appendtext("FAIL: $CompareSignedDrivers are missing. Uninstall Tobii Experience Software and re-install it again.`r`n" )
+         Write-Log -Message "FAIL: $CompareSignedDrivers are missing. Uninstall Tobii Experience Software and re-install it again." 
     }
     #List from Device Manager
     $GetDriverStatus = (Get-PnpDevice -FriendlyName '*Tobii*' | Sort-object FriendlyName -desc | Where-Object { $_.Status -ne "OK" } | Select-Object FriendlyName, InstanceId).FriendlyName
     if ($GetDriverStatus.count -gt 0) {
-        $outputbox.appendtext("FAIL: $GetDriverStatus is not properly running..Uninstall Tobii Experience Software and re-install it again.`r`n")
+         Write-Log -Message "FAIL: $GetDriverStatus are not properly running..Uninstall Tobii Experience Software and re-install it again."
     }
 
     #6 Check if there are valid calibration profiles
-    $outputbox.appendtext("`r`n===============SIXTH===============`r`nChecking calibration profiles and display setup`r`n")
+    Write-Log -Message "===============SIXTH===============`r`nChecking calibration profiles and display setup.."
     $EyeXConfig = "HKLM:\SOFTWARE\WOW6432Node\Tobii\EyeXConfig"
     if (Test-path $EyeXConfig) {
         $CurrentProfile = (Get-itemproperty -Path $EyeXConfig).currentuserprofile
         if ($CurrentProfile.count -gt 0) {
-            $outputbox.appendtext("PASS: Active profile is $currentprofile`r`n")
+            Write-Log -Message "PASS: Active profile is $currentprofile."
         }
         else {
-            $outputbox.appendtext("FAIL: No active profile. Open Tobii Dynavox Eye Tracking and create a new calibration profile.`r`n")
+            Write-Log -Message "FAIL: No active profile. Open Tobii Dynavox Eye Tracking and create a new calibration profile."
         }
     }
 
@@ -236,23 +244,23 @@ Function Troubleshoot {
     if (Test-Path $UserProfile) {
         $getCalbfolders = (Get-ChildItem -Path $UserProfile).name | Split-Path -Leaf
         if ($getCalbfolders.count -gt 0) {
-            $outputbox.appendtext("Following Calibration profiles are created in this device:`r`n")
+             Write-Log -Message "Following Calibration profiles are created in this device:"
             foreach ($getCalbfolder in $getCalbfolders) {
                 $f = (Get-ChildItem -Path "$UserProfile\$getCalbfolder" -Recurse).property
                 if ($f.contains('Data')) {
-                    $outputbox.appendtext("PASS: $getCalbfolder is created, Data file is exist`r`n")
+                     Write-Log -Message "PASS: $getCalbfolder is created, Data file is exist."
                 }
                 else { 
-                    $outputbox.appendtext("FAIL: $getCalbfolder is created, but Data file is not exist. Open Tobii Dynavox Eye Tracking and re-calibrate $getCalbfolder.`r`n")
+                     Write-Log -Message "FAIL: $getCalbfolder is created, but Data file is not exist. Open Tobii Dynavox Eye Tracking and re-calibrate $getCalbfolder."
                 }
             }
         } 
         elseif ($getCalbfolders.count -eq 0) {
-            $outputbox.appendtext("FAIL: No Calibration Profile stored in this device. Open Tobii Dynavox Eye Tracking and create a new calibration profile.`r`n")
+             Write-Log -Message "FAIL: No Calibration Profile stored in this device. Open Tobii Dynavox Eye Tracking and create a new calibration profile."
         }   
-    }
+    }    
 
-    #Check for valid display-setup
+    #display-setup
     $regEntryPath = 'HKLM:\SOFTWARE\WOW6432Node\Tobii\EyeXConfig\MonitorMappings'
     $referenceValues = "ActiveDisplayArea", "AspectRatioHeight", "AspectRatioWidth"
     try {
@@ -260,17 +268,17 @@ Function Troubleshoot {
         $keyValue = (Get-ChildItem -Path $regEntryPath).property 
         $comparekeys = (Compare-Object -DifferenceObject $keyValue -ReferenceObject $referenceValues -CaseSensitive).inputobject
         if ($comparekeys.count -gt 0) {
-            $outputbox.appendtext("FAIL: No display values has been found! Open Tobii Dynavox Eye Tracking and perform display setup if possible.`r`n")
+            Write-Log -Message "FAIL: No display values has been found! Open Tobii Dynavox Eye Tracking and perform display setup if possible."
         }
         elseif ($comparekeys.count -eq 0) { 
-            $outputbox.appendtext("PASS: Display setup has been performed!`r`n")
+            Write-Log -Message "PASS: Display setup has been performed!"
         }
     } 
     catch {
-        $outputbox.appendtext("FAIL: No display setup has been found! Open Tobii Dynavox Eye Tracking and perform display setup if possible.`r`n")
+        Write-Log -Message "FAIL: No display setup has been found! Open Tobii Dynavox Eye Tracking and perform display setup if possible."
     }
     #pause
-    $outputbox.appendtext("Done!`r`n")
+    Write-Log -Message "Done!"
 }
 
 
@@ -305,87 +313,3 @@ $Button1.Add_Click{ Troubleshoot }
 $Form.Text = $fileversion
 $Form.Add_Shown( { $Form.Activate() })
 $Form.ShowDialog()
-=======
-﻿$PSScriptRoot
-
-$PCEyeDisplayName = "Tobii Experience Software For Windows (PCEye5)"
-$PCEyeLatestVersion = "4.149.0.21578"
-$ISeriesDisplayName = "Tobii Experience Software For Windows (I-Series)"
-$ISeriesLatestVersion = "4.149.0.21578"
-
-#Pinging ET and checking HW & fw
-$fpath = Get-ChildItem -Path $PSScriptRoot -Filter "FWUpgrade32.exe" -Recurse -erroraction SilentlyContinue | Select-Object -expand Fullname | Split-Path
-if ($fpath.count -gt 0) {
-    Set-Location $fpath
-    $Firmware = .\FWUpgrade32.exe --auto --info-only 
-    if ($Firmware -match "IS514") {
-        $LatestDisplayName = "$PCEyeDisplayName"
-        $LatestVersion = "$PCEyeLatestVersion"
-        write-host("ET is PCEye5, lastest $LatestDisplayName is $LatestVersion")
-    }
-    elseif ($Firmware -match "IS502") {
-        $LatestDisplayName = "$ISeriesDisplayName"
-        $LatestVersion = "$ISeriesLatestVersion"
-        Write-Host("ET is I-Series, lastest $LatestDisplayName is $LatestVersion")
-    }
-    elseif ( $Firmware -match "205 No eye tracker" ) {
-        write-host "No tracker connected"
-    }
-}
-else {
-    Write-Host " FWUpgrade32.exe is missing" 
-}
-
-#Listing Tobii Experience software that installed on this device
-$AllListApps = Get-ChildItem -Recurse -Path HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\, HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\, HKLM:\Software\WOW6432Node\Tobii\ | 
-Get-ItemProperty | Where-Object { 
-    $_.Displayname -like '*Tobii Experience Software*' -or
-    $_.Displayname -like '*Tobii Device Drivers*' -or
-    $_.Displayname -like '*Tobii Eye Tracking For Windows*'
-} 
-
-$AppLists = $AllListApps.DisplayName
-if ($AppLists.count -gt 0) {
-    Write-Host("Installed ET software on this device are following:")
-    $AppLists
-}
-Write-Host("`r")  
-
-Foreach ($AllListApp in $AllListApps) {
-    $DisplayName = $AllListApp.DisplayName
-    if ($DisplayName -ne $LatestDisplayName) {
-        Write-Host "Deleting $DisplayName.."
-        $UninstString = $AllListapp.UninstallString
-        $UninstString
-        if ($UninstString -match "ProgramData") {
-            if (($UninstString -match "4.49.0.4000") -and ($Firmware -match "IS502")) {
-                write-host "Run BeforeUninstall.bat script"
-                #cmd /c "BeforeUninstall.bat"
-            }
-            $newUninstString = $AllListapp.UninstallString -replace "msiexec.exe", "" -Replace "/I", "" -Replace "/X", "" -replace "/uninstall", ""
-            $uninst3 = $newUninstString.Trim()
-            try {
-                cmd /c $uninst3 /uninstall /quiet
-            }
-            catch { 
-                Write-Output "it didn't successfully uninstalled $DisplayName"
-            }
-        }
-        else {
-            $newUninstString = [regex]::Matches($UninstString, '\{(.*?)\}').Value
-            $uninst3 = $newUninstString.Trim()
-            Start-process "msiexec.exe" -arg "/X $uninst3 /quiet /norestart" -Wait
-        }
-    } 
-}
-Write-Host("`r") 
-Foreach ($AllListApp in $AllListApps) {
-    $DisplayName = $AllListApp.DisplayName
-    if ($DisplayName -eq $LatestDisplayName) {
-        Write-Host "Modifying $DisplayName.."
-        $ModifyPath = $AllListApp.ModifyPath
-        $NewModifyPath = [regex]::Matches($ModifyPath, '\{(.*?)\}').Value
-        #Start-process "MsiExec" -arg "/I $NewModifyPath"
-    }
-}
->>>>>>> c98138a789bd5261daf418f16dc53ff4b5d7f301
