@@ -1,4 +1,4 @@
-﻿#_V0.6
+﻿#_V0.7
 #Forces powershell to run as an admin
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 { Start-Process powershell.exe "-NoProfile -Windowstyle Hidden -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
@@ -6,23 +6,22 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
-
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'Error logs collector v.0.6'
-$form.Size = New-Object System.Drawing.Size(400, 300)
+$form.Text = 'Error logs collector v.0.7'
+$form.Size = New-Object System.Drawing.Size(420, 320)
 $form.StartPosition = 'CenterScreen'
 
 $okButton = New-Object System.Windows.Forms.Button
-$okButton.Location = New-Object System.Drawing.Point(125, 230)
-$okButton.Size = New-Object System.Drawing.Size(75, 23)
+$okButton.Location = New-Object System.Drawing.Point(135, 250)
+$okButton.Size = New-Object System.Drawing.Size(75, 25)
 $okButton.Text = 'OK'
 $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
 $form.AcceptButton = $okButton
 $form.Controls.Add($okButton)
 
 $cancelButton = New-Object System.Windows.Forms.Button
-$cancelButton.Location = New-Object System.Drawing.Point(200, 230)
-$cancelButton.Size = New-Object System.Drawing.Size(75, 23)
+$cancelButton.Location = New-Object System.Drawing.Point(210, 250)
+$cancelButton.Size = New-Object System.Drawing.Size(75, 25)
 $cancelButton.Text = 'Cancel'
 $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
 $form.CancelButton = $cancelButton
@@ -41,31 +40,47 @@ $form.Controls.Add($textBox)
 
 $label2 = New-Object System.Windows.Forms.Label
 $label2.Location = New-Object System.Drawing.Point(10, 30)
-$label2.Size = New-Object System.Drawing.Size(350, 30)
+$label2.Size = New-Object System.Drawing.Size(400, 30)
 $label2.Text = "ex. C:\Users\TobiiDynavox_SysInfo_xxxx `nResults will be saved in ErrorLogs at the same path as given above."
 $form.Controls.Add($label2)
 
-$label2 = New-Object System.Windows.Forms.Label
-$label2.Location = New-Object System.Drawing.Point(10, 60)
-$label2.Size = New-Object System.Drawing.Size(350, 80)
-$label2.Text = "A. Which error logs are you looking for(choose only a number): `n1 Latest logs `n2 Eye Assist logs `n3 Driver software logs `n4 Driver installer logs `n5 Any other file or folder in the path"
-$form.Controls.Add($label2)
+$label3 = New-Object System.Windows.Forms.Label
+$label3.Location = New-Object System.Drawing.Point(10, 60)
+$label3.Size = New-Object System.Drawing.Size(400, 80)
+$label3.Text = "A. Which error logs are you looking for(choose only a number): `n1 Latest logs `n2 Eye Assist logs `n3 Driver software logs `n4 Driver installer logs `n5 Any other file or folder in the path"
+$form.Controls.Add($label3)
 
 $textBox2 = New-Object System.Windows.Forms.TextBox
 $textBox2.Location = New-Object System.Drawing.Point(10, 140)
 $textBox2.Size = New-Object System.Drawing.Size(100, 20)
 $form.Controls.Add($textBox2)
 
-$label3 = New-Object System.Windows.Forms.Label
-$label3.Location = New-Object System.Drawing.Point(10, 165)
-$label3.Size = New-Object System.Drawing.Size(350, 30)
-$label3.Text = "B. Collect logs at specific time, format should be written as: `n2021-01-01 12:30"
-$form.Controls.Add($label3)
+$label4 = New-Object System.Windows.Forms.Label
+$label4.Location = New-Object System.Drawing.Point(10, 160)
+$label4.Size = New-Object System.Drawing.Size(400, 20)
+$label4.Text = "B. Timestamp logs, format should be as: 2021-01-01 12:30"
+$form.Controls.Add($label4)
 
 $textBox3 = New-Object System.Windows.Forms.TextBox
-$textBox3.Location = New-Object System.Drawing.Point(10, 195)
+$textBox3.Location = New-Object System.Drawing.Point(10, 180)
 $textBox3.Size = New-Object System.Drawing.Size(100, 20)
 $form.Controls.Add($textBox3)
+
+$label5 = New-Object System.Windows.Forms.Label
+$label5.Location = New-Object System.Drawing.Point(10, 200)
+$label5.Size = New-Object System.Drawing.Size(400, 20)
+$label5.Text = "C. Logs between two timestamps:"
+$form.Controls.Add($label5)
+
+$textBox4 = New-Object System.Windows.Forms.TextBox
+$textBox4.Location = New-Object System.Drawing.Point(10, 220)
+$textBox4.Size = New-Object System.Drawing.Size(100, 20)
+$form.Controls.Add($textBox4)
+
+$textBox5 = New-Object System.Windows.Forms.TextBox
+$textBox5.Location = New-Object System.Drawing.Point(180, 220)
+$textBox5.Size = New-Object System.Drawing.Size(100, 20)
+$form.Controls.Add($textBox5)
 
 $form.Topmost = $true
 
@@ -123,16 +138,15 @@ Function GetETLatestErrorLogs {
         }
         else {
             New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-            $content2 = Get-Content -Path "$file" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-            Add-Content -Path "$ErrorPath\temp.txt" -Value $content2
-            $content3 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
-            if ($content3.length -eq 0) {
+            Get-Content -Path "$file" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+            $content1 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
+            if ($content1.length -eq 0) {
                 Write-Host "empty"
             } 
             else {
                 Add-Content -path "$ErrorPath\LatestErrors.txt" -Value $file
             }	
-            Add-Content -path "$ErrorPath\LatestErrors.txt" -Value $content3, "`n"
+            Add-Content -path "$ErrorPath\LatestErrors.txt" -Value $content1, "`n"
             Remove-Item "$ErrorPath\temp.txt"
         }
     }
@@ -160,24 +174,23 @@ Function AllEALogs {
     }
 
     if (Test-path $EALogs1) {
-        $content1 = Get-ChildItem -Path $EALogs1 -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+        $EAcontent = Get-ChildItem -Path $EALogs1 -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
     } 
     elseif (Test-path $EALogs2) {
-        $content1 = Get-ChildItem -Path $EALogs2 -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+        $EAcontent = Get-ChildItem -Path $EALogs2 -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
     }
 
-    foreach ($Content1 in $content1) {
+    foreach ($NewEAContent in $EAcontent) {
         New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content2 = Get-Content -Path "$Content1" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content2
-        $content3 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
-        if ($content3.length -eq 0) {
+        Get-Content -Path "$NewEAContent" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content2 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
+        if ($content2.length -eq 0) {
             Write-Host "empty"
         } 
         else {
-            Add-Content -path "$ErrorPath\EALogs.txt" -Value $Content1
+            Add-Content -path "$ErrorPath\EALogs.txt" -Value $NewEAContent
         }	
-        Add-Content -path "$ErrorPath\EALogs.txt" -Value $content3, "`n"
+        Add-Content -path "$ErrorPath\EALogs.txt" -Value $content2, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
 }
@@ -208,109 +221,102 @@ Function AllTTechLogs {
         }
     }
 
-    $content1 = Get-ChildItem -Include ServiceLog*.* -Path $LogPath -Recurse  | Sort-Object name -desc | Select-Object -expand Fullname
+    $Servicecontent = Get-ChildItem -Include ServiceLog*.* -Path $LogPath -Recurse  | Sort-Object name -desc | Select-Object -expand Fullname
     $file = $files[0]
-    foreach ($Content1 in $content1) {
+    foreach ($NewServicecontent in $Servicecontent) {
         New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content3 = Get-Content -LiteralPath "$Content1" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content3
+        Get-Content -LiteralPath "$NewServicecontent" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content3 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
+        if ($content3.length -eq 0) { 
+            Write-Host "empty"
+        } 
+        else {
+            Add-Content -path $file -Value $NewServicecontent
+        }	
+        Add-Content -path $file -value $content3, "`n"
+        Remove-Item "$ErrorPath\temp.txt"
+    }
+
+    $PRcontent = Get-ChildItem -Include pr_log*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    $file = $files[1]
+    foreach ($NewPRContent in $PRcontent) {
+        New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+        Get-Content -Path "$NewPRContent" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
         $content4 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
         if ($content4.length -eq 0) { 
             Write-Host "empty"
         } 
         else {
-            Add-Content -path $file -Value $Content1
+            Add-Content -path $file -Value $NewPRContent
         }	
         Add-Content -path $file -value $content4, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
 
-    $content2 = Get-ChildItem -Include pr_log*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
-    $file = $files[1]
-    foreach ($Content2 in $content2) {
+    $Interactioncontent = Get-ChildItem -Include InteractionLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    $file = $files[2]
+    foreach ($NewInteractioncontent in $Interactioncontent) {
         New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content7 = Get-Content -Path "$Content2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content7
-        $content8 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
+        Get-Content -LiteralPath "$NewInteractioncontent" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content5 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }    
+        if ($content5.length -eq 0) { 
+            Write-Host "empty"
+        } 
+        else {
+            Add-Content -path $file -Value $NewInteractioncontent
+
+        }	
+        Add-Content $file -value $content5, "`n"
+        Remove-Item "$ErrorPath\temp.txt"
+    }
+
+    $Servercontent = Get-ChildItem -Include ServerLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    $file = $files[3]
+    foreach ($NewServercontent in $Servercontent) {
+        New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+        Get-Content -LiteralPath "$NewServercontent" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content6 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line } 
+        if ($content6.length -eq 0) { 
+            Write-Host "empty"
+        } 
+        else {
+            Add-Content -path $file -Value $NewServercontent
+        }	
+        Add-Content $file -value $content6, "`n"
+        Remove-Item "$ErrorPath\temp.txt"
+    }
+
+    $Configcontent = Get-ChildItem -Include ConfigurationLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    $file = $files[4]
+    foreach ($NewConfigcontent in $Configcontent) {
+        New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+        Get-Content -LiteralPath "$NewConfigcontent" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content7 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line } 
+        if ($content7.length -eq 0) { 
+            Write-Host "empty"
+        } 
+        else {
+            Add-Content -path $file -Value $NewConfigcontent
+        }	
+        Add-Content $file -value $content7, "`n"
+        Remove-Item "$ErrorPath\temp.txt"
+    }
+
+    $Traycontent = Get-ChildItem -Include Tray*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    $file = $files[5]
+    foreach ($NewTraycontent in $Traycontent) {
+        New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+        Get-Content -LiteralPath "$NewTraycontent" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content8 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line } 
         if ($content8.length -eq 0) { 
             Write-Host "empty"
         } 
         else {
-            Add-Content -path $file -Value $Content2
+            Add-Content -path $file -Value $NewTraycontent
         }	
-        Add-Content -path $file -value $content8, "`n"
+        Add-Content $file -value $content8, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
-
-    $content3 = Get-ChildItem -Include InteractionLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
-    $file = $files[2]
-    foreach ($Content3 in $content3) {
-        New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content10 = Get-Content -LiteralPath "$Content3" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content10
-        $content11 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }    
-        if ($content11.length -eq 0) { 
-            Write-Host "empty"
-        } 
-        else {
-            Add-Content -path $file -Value $Content3
-
-        }	
-        Add-Content $file -value $content11, "`n"
-        Remove-Item "$ErrorPath\temp.txt"
-    }
-
-    $content4 = Get-ChildItem -Include ServerLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
-    $file = $files[3]
-    foreach ($Content4 in $content4) {
-        New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content13 = Get-Content -LiteralPath "$Content4" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content13
-        $content14 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line } 
-        if ($content14.length -eq 0) { 
-            Write-Host "empty"
-        } 
-        else {
-            Add-Content -path $file -Value $Content4
-        }	
-        Add-Content $file -value $content14, "`n"
-        Remove-Item "$ErrorPath\temp.txt"
-    }
-
-    $content5 = Get-ChildItem -Include ConfigurationLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
-    $file = $files[4]
-    foreach ($Content5 in $content5) {
-        New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content15 = Get-Content -LiteralPath "$Content5" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content15
-        $content13 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line } 
-        if ($content13.length -eq 0) { 
-            Write-Host "empty"
-        } 
-        else {
-            Add-Content -path $file -Value $Content5
-        }	
-        Add-Content $file -value $content13, "`n"
-        Remove-Item "$ErrorPath\temp.txt"
-    }
-
-    $content6 = Get-ChildItem -Include Tray*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
-    $file = $files[5]
-    foreach ($Content6 in $content6) {
-        New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content15 = Get-Content -LiteralPath "$Content6" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content15
-        $content13 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line } 
-        if ($content13.length -eq 0) { 
-            Write-Host "empty"
-        } 
-        else {
-            Add-Content -path $file -Value $Content6
-        }	
-        Add-Content $file -value $content13, "`n"
-        Remove-Item "$ErrorPath\temp.txt"
-    }
-
 }
 
 Function InstallerLogs {
@@ -330,24 +336,22 @@ Function InstallerLogs {
         Write-Host "cleaing"
     }
     if (Test-path $InstallerLogs) { 
-        $content2 = Get-ChildItem -Path $InstallerLogs -Recurse -File | Sort-Object name -desc | Select-Object -expand Fullname
-        foreach ($Content2 in $content2) {
+        $Installercontent = Get-ChildItem -Path $InstallerLogs -Recurse -File | Sort-Object name -desc | Select-Object -expand Fullname
+        foreach ($NewInstallercontent in $Installercontent) {
             New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-            $content3 = Get-Content -Path "$Content2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } 
-            Add-Content -Path "$ErrorPath\temp.txt" -Value $content3
-            $content4 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
-            if ($content4.length -eq 0) { 
+            Get-Content -Path "$NewInstallercontent" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+            $content9 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
+            if ($content9.length -eq 0) { 
                 Write-Host "empty"
             } 
             else {
-                Add-Content -path $ErrorFile -Value $Content2
+                Add-Content -path $ErrorFile -Value $NewInstallercontent
             }	
-            add-Content $ErrorFile -value $content4, "`n"
+            add-Content $ErrorFile -value $content9, "`n"
             Remove-Item "$ErrorPath\temp.txt"	
         }
     }
     else { Write-Host "Files are not existed" }
-
 }
 
 Function OtherLogs {
@@ -368,26 +372,22 @@ Function OtherLogs {
             Clear-Content -Path "$ErrorPath\errorlogs.txt"
             Write-Host "cleaing"
         }
-
-        $content1 = Get-ChildItem -Path $LogPath -file | Sort-Object name -desc | Select-Object -expand Fullname
-
-        foreach ($Content1 in $content1) {
+        $Othercontent = Get-ChildItem -Path $LogPath -file | Sort-Object name -desc | Select-Object -expand Fullname
+        foreach ($NewOthercontent in $Othercontent) {
             New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-            $content2 = Get-Content -Path "$Content1" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-            Add-Content -Path "$ErrorPath\temp.txt" -Value $content2
-            $content3 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
-            if ($content3.length -eq 0) {
+            Get-Content -Path "$NewOthercontent" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+            $content10 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
+            if ($content10.length -eq 0) {
                 Write-Host "empty"
             } 
             else {
-                Add-Content -path "$ErrorPath\errorlogs.txt" -Value $Content1
+                Add-Content -path "$ErrorPath\errorlogs.txt" -Value $NewOthercontent
             }	
-            Add-Content -path "$ErrorPath\errorlogs.txt" -Value $content3, "`n"
+            Add-Content -path "$ErrorPath\errorlogs.txt" -Value $content10, "`n"
             Remove-Item "$ErrorPath\temp.txt"
         }
 
-    }
-    else {
+    } else {
         $LogPath2 = Split-Path -Path $LogPath
         $ErrorPath = "$LogPath2\ErrorLogs"
         if (!(Test-Path "$ErrorPath")) {
@@ -403,25 +403,18 @@ Function OtherLogs {
             Clear-Content -Path "$ErrorPath\errorlogs.txt"
             Write-Host "cleaing"
         }
-
-        #$content1 = Get-ChildItem -Path $LogPath2 -file | Sort-Object name -desc | Select-Object -expand Fullname
-
-
         New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content2 = Get-Content -Path "$LogPath" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content2
-        $content3 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
-        if ($content3.length -eq 0) {
+        Get-Content -Path "$LogPath" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content11 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "error" -AllMatches | ForEach-Object { $_.Line }
+        if ($content11.length -eq 0) {
             Write-Host "empty"
         } 
         else {
             Add-Content -path "$ErrorPath\errorlogs.txt" -Value $LogPath
         }	
-        Add-Content -path "$ErrorPath\errorlogs.txt" -Value $content3, "`n"
+        Add-Content -path "$ErrorPath\errorlogs.txt" -Value $content11, "`n"
         Remove-Item "$ErrorPath\temp.txt"
-
     }
-
 }
 
 Function TimeStamp {
@@ -437,7 +430,6 @@ Function TimeStamp {
         Write-Host "Creating ErrorLogs folder.."
         New-Item -Path "$ErrorPath" -ItemType Directory   
     }
-
     if ($date -match ":") {
         $newDate = $date -replace ":" , "."
     }
@@ -451,170 +443,465 @@ Function TimeStamp {
         Write-Host "cleaing"
     }
 
-    $content1 = Get-ChildItem -Include ServiceLog*.* -Path $LogPath -Recurse  | Sort-Object name -desc | Select-Object -expand Fullname
-    foreach ($Content1 in $content1) {
+    $Servicecontent1 = Get-ChildItem -Include ServiceLog*.* -Path $LogPath -Recurse  | Sort-Object name -desc | Select-Object -expand Fullname
+    foreach ($NewServicecontent1 in $Servicecontent1) {
         New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content2 = Get-Content -Path "$Content1" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content2
-        $content3 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }
-        if ($content3.length -eq 0) { 
+        Get-Content -Path "$NewServicecontent1" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content12 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }
+        if ($content12.length -eq 0) { 
             Write-Host "empty"
         } 
         else {
-            Add-Content $ErrorFile -Value $Content1
+            Add-Content $ErrorFile -Value $NewServicecontent1
         }	
-        Add-Content $ErrorFile -value $content3, "`n"
+        Add-Content $ErrorFile -value $content12, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
 
-    $content2 = Get-ChildItem -Include pr_log*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
-    foreach ($Content2 in $content2) {
+    $PRcontent1 = Get-ChildItem -Include pr_log*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    foreach ($NewPRcontent1 in $PRcontent1) {
         New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content7 = Get-Content -Path "$Content2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content7
-        $content8 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }
-        if ($content8.length -eq 0) { 
+        Get-Content -Path "$NewPRcontent1" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content13 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }
+        if ($content13.length -eq 0) { 
             Write-Host "empty"
         } 
         else {
-            Add-Content $ErrorFile -Value $Content2
+            Add-Content $ErrorFile -Value $NewPRcontent1
         }
-        add-Content $ErrorFile -value $content8, "`n"
+        add-Content $ErrorFile -value $content13, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
 
-    $content3 = Get-ChildItem -Include InteractionLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
-    foreach ($Content3 in $content3) {
+    $Interactioncontent2 = Get-ChildItem -Include InteractionLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    foreach ($NewInteractioncontent2 in $Interactioncontent2) {
         New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content10 = Get-Content -LiteralPath "$Content3" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content10
-        $content11 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }    
-        if ($content11.length -eq 0) { 
-            Write-Host "empty"
-        } 
-        else {
-            Add-Content -path $ErrorFile -Value $Content3
-        }	
-        Add-Content $ErrorFile -value $content11, "`n"
-        Remove-Item "$ErrorPath\temp.txt"
-    }
-
-    $content4 = Get-ChildItem -Include ServerLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
-    foreach ($Content4 in $content4) {
-        New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content13 = Get-Content -LiteralPath "$Content4" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content13
-        $content14 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line } 
+        Get-Content -LiteralPath "$NewInteractioncontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content14 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }    
         if ($content14.length -eq 0) { 
             Write-Host "empty"
         } 
         else {
-            Add-Content -path $ErrorFile -Value $Content4
+            Add-Content -path $ErrorFile -Value $NewInteractioncontent2
         }	
         Add-Content $ErrorFile -value $content14, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
 
-    $content5 = Get-ChildItem -Include ConfigurationLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
-    foreach ($Content5 in $content5) {
+    $Servercontent2 = Get-ChildItem -Include ServerLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    foreach ($NewServercontent2 in $Servercontent2) {
         New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content15 = Get-Content -LiteralPath "$Content5" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content15
-        $content13 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line } 
-        if ($content13.length -eq 0) { 
+        Get-Content -LiteralPath "$NewServercontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content15 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line } 
+        if ($content15.length -eq 0) { 
             Write-Host "empty"
         } 
         else {
-            Add-Content -path $ErrorFile -Value $Content5
+            Add-Content -path $ErrorFile -Value $NewServercontent2
         }	
-        Add-Content $ErrorFile -value $content13, "`n"
+        Add-Content $ErrorFile -value $content15, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
 
-    $content6 = Get-ChildItem -Include Tray*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
-    foreach ($Content6 in $content6) {
+    $Configcontent2 = Get-ChildItem -Include ConfigurationLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    foreach ($NewConfigcontent2 in $Configcontent2) {
         New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content15 = Get-Content -LiteralPath "$Content6" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content15
-        $content13 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line } 
-        if ($content13.length -eq 0) { 
+        Get-Content -LiteralPath "$NewConfigcontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content16 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line } 
+        if ($content16.length -eq 0) { 
             Write-Host "empty"
         } 
         else {
-            Add-Content -path $ErrorFile -Value $Content6
+            Add-Content -path $ErrorFile -Value $NewConfigcontent2
         }	
-        Add-Content $ErrorFile -value $content13, "`n"
+        Add-Content $ErrorFile -value $content16, "`n"
+        Remove-Item "$ErrorPath\temp.txt"
+    }
+
+    $Traycontent1 = Get-ChildItem -Include Tray*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    foreach ($NewTraycontent1 in $Traycontent1) {
+        New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+        Get-Content -LiteralPath "$NewTraycontent1" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content17 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line } 
+        if ($content17.length -eq 0) { 
+            Write-Host "empty"
+        } 
+        else {
+            Add-Content -path $ErrorFile -Value $NewTraycontent1
+        }	
+        Add-Content $ErrorFile -value $content17, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
 
     if (Test-path $EALogs1) {
-        $content6 = Get-ChildItem -Path $EALogs1 -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+        $EAcontent1 = Get-ChildItem -Path $EALogs1 -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
     } 
     elseif (Test-path $EALogs2) {
-        $content6 = Get-ChildItem -Path $EALogs2 -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+        $EAcontent1 = Get-ChildItem -Path $EALogs2 -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
     }
-    foreach ($Content6 in $content6) {
+    foreach ($NewEAcontent1 in $EAcontent1) {
         New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content2 = Get-Content -Path "$Content6" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content2
-        $content3 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }
-        if ($content3.length -eq 0) {
+        Get-Content -Path "$NewEAcontent1" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content18 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }
+        if ($content18.length -eq 0) {
             Write-Host "empty"
         } 
         else {
-            Add-Content -path $ErrorFile -Value $Content6
+            Add-Content -path $ErrorFile -Value $NewEAcontent1
         }	
-        Add-Content -path $ErrorFile -Value $content3, "`n"
+        Add-Content -path $ErrorFile -Value $content18, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
 
-
     if (Test-path $InstallerLogs) { 
-        $content7 = Get-ChildItem -Path $InstallerLogs -Recurse -File | Sort-Object name -desc | Select-Object -expand Fullname
-        foreach ($Content7 in $content7) {
+        $Installercontent1 = Get-ChildItem -Path $InstallerLogs -Recurse -File | Sort-Object name -desc | Select-Object -expand Fullname
+        foreach ($NewInstallercontent1 in $Installercontent1) {
             New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-            $content3 = Get-Content -Path "$Content7" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } 
-            Add-Content -Path "$ErrorPath\temp.txt" -Value $content3
-            $content4 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }
-            if ($content4.length -eq 0) { 
+            Get-Content -Path "$NewInstallercontent1" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+            $content19 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }
+            if ($content19.length -eq 0) { 
                 Write-Host "empty"
             } 
             else {
-                Add-Content -path $file -Value $Content7
+                Add-Content -path $file -Value $NewInstallercontent1
             }	
-            add-Content $ErrorFile -value $content4, "`n"
+            add-Content $ErrorFile -value $content19, "`n"
             Remove-Item "$ErrorPath\temp.txt"	
         }
     }
     else { Write-Host "Files are not existed" }
 
-
-    $content8 = Get-ChildItem -Include ComputerControl*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
-    foreach ($Content8 in $content8) {
+    $CCcontent = Get-ChildItem -Include ComputerControl*.* -Path $LogPath -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    foreach ($NewCCcontent in $CCcontent) {
         New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
-        $content2 = Get-Content -Path "$Content8" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' }
-        Add-Content -Path "$ErrorPath\temp.txt" -Value $content2
-        $content3 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }
-        if ($content3.length -eq 0) {
+        Get-Content -Path "$NewCCcontent" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content20 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse | Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }
+        if ($content20.length -eq 0) {
             Write-Host "empty"
         } 
         else {
-            Add-Content -path $ErrorFile -Value $Content8
+            Add-Content -path $ErrorFile -Value $NewCCcontent
         }	
-        Add-Content -path $ErrorFile -Value $content3, "`n"
+        Add-Content -path $ErrorFile -Value $content20, "`n"
+        Remove-Item "$ErrorPath\temp.txt"
+    }
+}
+
+Function TimeStampBetween {
+
+    $LogPath = $x
+    $ErrorPath = "$LogPath\ErrorLogs"
+    $EALogs1 = "$LogPath\TOBII_DYNAVOX_APPDATA\EYEASSIST\LOGS"
+    $EALogs2 = "$LogPath\Logs\Eye Assist\Logs"
+    $InstallerLogs = "$LogPath\TOBII_INSTALLER_LOGS\TEMP"
+    #$date = "2020-11-22"
+
+    $start = Get-Date "$x4"
+    $end = Get-Date "$x5"
+
+  
+    # Pattern explaination # ^ matches the begginning of each line # \d matches a decimal character
+    # {4},{2},{3} repeats the previous character # so \d{4} matches any four numerals # / and : are literally / and :
+    # a period is a special regex character so it needs escaped \.
+    $pattern = "^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\."
+
+    #Creating folder
+    if (!(Test-Path "$ErrorPath")) {
+        Write-Host "Creating ErrorLogs folder.." 
+        $NewFolder = New-Item -Path "$ErrorPath" -ItemType Directory  
+    }
+
+    if ($start -match ":") {
+        $newStart = $start -replace ":" , "."
+    } else { $newstart = $start }
+
+    if ($end -match ":") {
+        $newEnd = $end -replace ":" , "."
+    } else { $newEnd = $end }
+
+    $textfile = "$newStart - $newEnd"
+    if (!(Test-Path "$ErrorPath\$textfile.txt")) {
+        $NewItem = New-Item -Path $ErrorPath -Name "$textfile.txt" -ItemType "file"
+        Write-Host "creating file"
+    } elseif (Test-Path "$ErrorPath\$textfile.txt") {
+        Clear-Content -Path "$ErrorPath\$newStart - $newEnd.txt"
+        Write-Host "cleaing"
+    }
+
+    $Servicecontent2 = Get-ChildItem -Include ServiceLog*.* -Path $LogPath -Recurse  | Sort-Object name -desc | Where-Object fullname -NotLike "$ErrorPath\ServiceLog.txt" | Select-Object -expand Fullname
+    foreach ($NewServicecontent2 in $Servicecontent2) {
+        $newtemp = New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+        Get-Content -Path "$NewServicecontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' -replace ",", "." } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content21 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse #| Select-String -Pattern "$date" -AllMatches | ForEach-Object { $_.Line }
+        $entries = $content21 | Select-String -Pattern $pattern | ForEach-Object {
+            [pscustomobject]@{ 
+                'Date' = [datetime]::Parse($_.Matches[0].Value) 
+                'Line' = $_.LineNumber 
+                'Text' = $_.Line
+            }
+        }
+        $filtered = $entries | Where-Object { $_.Date -ge $start -and $_.Date -le $end } | Sort-Object Date 
+        if ($filtered) {
+            $first = $filtered[0].Line - 1 
+            $last = $filtered[-1].Line - 1 
+            $content21[$first..$last] 
+        }
+        if ($filtered.length -eq 0) { 
+            Write-Host "empty"
+        } 
+        else {
+            Add-Content "$ErrorPath\$textfile.txt" -Value $NewServicecontent2
+        }
+        Add-Content "$ErrorPath\$textfile.txt" -value $filtered.text, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
 
-    #(gc "$ErrorPath\$date.txt") | ? {$_.trim() -ne ""} | Set-Content "$ErrorPath\date.txt"
+    $PRcontent2 = Get-ChildItem -Include pr_log*.* -Path $LogPath -Recurse | Sort-Object name -desc | Where-Object fullname -NotLike "$ErrorPath\pr_log.txt" | Select-Object -expand Fullname
+    foreach ($NewPRcontent2 in $PRcontent2) {
+        New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+        Get-Content -Path "$NewPRcontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' -replace ",", "." } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content22 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse
+        $entries = $content22 | Select-String -Pattern $pattern | ForEach-Object {
+            [pscustomobject]@{ 
+                'Date' = [datetime]::Parse($_.Matches[0].Value) 
+                'Line' = $_.LineNumber 
+                'Text' = $_.Line
+            }
+        }
+        $filtered = $entries | Where-Object { $_.Date -ge $start -and $_.Date -le $end } | Sort-Object Date 
+        if ($filtered) {
+            $first = $filtered[0].Line - 1 
+            $last = $filtered[-1].Line - 1 
+            $content22[$first..$last] 
+        }
+        if ($filtered.length -eq 0) { 
+            Write-Host "empty"
+        } 
+        else {
+            Add-Content "$ErrorPath\$textfile.txt" -Value $NewPRcontent2
+        }
+        Add-Content "$ErrorPath\$textfile.txt" -value $filtered.text, "`n"
+        Remove-Item "$ErrorPath\temp.txt"
+    }
+
+    $Interactioncontent2 = Get-ChildItem -Include InteractionLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Where-Object fullname -NotLike "$ErrorPath\InteractionLog.txt" | Select-Object -expand Fullname
+    foreach ($NewInteractioncontent2 in $Interactioncontent2) {
+        $NewItem = New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+        Get-Content -LiteralPath "$NewInteractioncontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' -replace ",", "." } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content23 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse
+        $entries = $content23 | Select-String -Pattern $pattern | ForEach-Object {
+            [pscustomobject]@{ 
+                'Date' = [datetime]::Parse($_.Matches[0].Value) 
+                'Line' = $_.LineNumber 
+                'Text' = $_.Line
+            }
+        }
+        $filtered = $entries | Where-Object { $_.Date -ge $start -and $_.Date -le $end } | Sort-Object Date 
+        if ($filtered) {
+            $first = $filtered[0].Line - 1 
+            $last = $filtered[-1].Line - 1 
+            $content23[$first..$last] 
+        }
+        if ($filtered.length -eq 0) { 
+            Write-Host "empty"
+        } 
+        else {
+            Add-Content "$ErrorPath\$textfile.txt" -Value $NewInteractioncontent2
+        }	
+        Add-Content "$ErrorPath\$textfile.txt" -value $filtered.text, "`n"
+        Remove-Item "$ErrorPath\temp.txt"
+    }
+
+    $Servercontent2 = Get-ChildItem -Include ServerLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Where-Object fullname -NotLike "$ErrorPath\ServerLog.txt" | Select-Object -expand Fullname
+    foreach ($NewServercontent2 in $Servercontent2) {
+        $NewItem = New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+        Get-Content -LiteralPath "$NewServercontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' -replace ",", "." } | Add-Content -Path "$ErrorPath\temp.txt"
+        $content24 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse
+        $entries = $content24 | Select-String -Pattern $pattern | ForEach-Object {
+            [pscustomobject]@{ 
+                'Date' = [datetime]::Parse($_.Matches[0].Value) 
+                'Line' = $_.LineNumber 
+                'Text' = $_.Line
+            }
+        }
+        $filtered = $entries | Where-Object { $_.Date -ge $start -and $_.Date -le $end } | Sort-Object Date 
+        if ($filtered) {
+            $first = $filtered[0].Line - 1 
+            $last = $filtered[-1].Line - 1 
+            $content24[$first..$last] 
+        }
+        if ($filtered.length -eq 0) { 
+            Write-Host "empty"
+        } 
+        else {
+            Add-Content "$ErrorPath\$textfile.txt" -Value $NewServercontent2
+        }	
+        Add-Content "$ErrorPath\$textfile.txt" -value $filtered.text, "`n"
+        Remove-Item "$ErrorPath\temp.txt"
+    }
+
+    $Configcontent2 = Get-ChildItem -Include ConfigurationLog*.* -Path $LogPath -Recurse | Sort-Object name -desc | Where-Object fullname -NotLike "$ErrorPath\ConfigurationLog.txt" | Select-Object -expand Fullname
+    foreach ($NewConfigcontent2 in $Configcontent2) {
+	    $NewItem = New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+	    Get-Content -LiteralPath "$NewConfigcontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' -replace ",", "." } | Add-Content -Path "$ErrorPath\temp.txt"
+	    $content25 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse
+	    $entries = $content25 | Select-String -Pattern $pattern | ForEach-Object {
+		    [pscustomobject]@{ 
+			    'Date' = [datetime]::Parse($_.Matches[0].Value) 
+			    'Line' = $_.LineNumber 
+			    'Text' = $_.Line
+		    }
+	    }
+	    $filtered = $entries | Where-Object { $_.Date -ge $start -and $_.Date -le $end } | Sort-Object Date 
+	    if ($filtered) {
+		    $first = $filtered[0].Line - 1 
+		    $last = $filtered[-1].Line - 1 
+		    $content25[$first..$last] 
+	    }
+	    if ($filtered.length -eq 0) { 
+		    Write-Host "empty"
+	    } 
+	    else {
+		    Add-Content "$ErrorPath\$textfile.txt" -Value $NewConfigcontent2
+	    }	
+	    Add-Content "$ErrorPath\$textfile.txt" -value $filtered.text, "`n"
+	    Remove-Item "$ErrorPath\temp.txt"
+    }
+
+    $Traycontent2 = Get-ChildItem -Include Tray*.* -Path $LogPath -Recurse | Sort-Object name -desc | Where-Object fullname -NotLike "$ErrorPath\Tray.txt" | Select-Object -expand Fullname
+    foreach ($NewTraycontent2 in $Traycontent2) {
+	    $NewItem = New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+	    Get-Content -LiteralPath "$NewTraycontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' -replace ",", "." } | Add-Content -Path "$ErrorPath\temp.txt"
+	    $content26 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse
+	    $entries = $content26 | Select-String -Pattern $pattern | ForEach-Object {
+		    [pscustomobject]@{ 
+			    'Date' = [datetime]::Parse($_.Matches[0].Value) 
+			    'Line' = $_.LineNumber 
+			    'Text' = $_.Line
+		    }
+	    }
+	    $filtered = $entries | Where-Object { $_.Date -ge $start -and $_.Date -le $end } | Sort-Object Date 
+	    if ($filtered) {
+		    $first = $filtered[0].Line - 1 
+		    $last = $filtered[-1].Line - 1 
+		    $content26[$first..$last] 
+	    }
+	    if ($filtered.length -eq 0) { 
+		    Write-Host "empty"
+	    } 
+	    else {
+		    Add-Content "$ErrorPath\$textfile.txt" -Value $NewTraycontent2
+	    }	
+	    Add-Content "$ErrorPath\$textfile.txt" -value $filtered.text, "`n"
+	    Remove-Item "$ErrorPath\temp.txt"
+    }
+
+    if (Test-path $EALogs1) {
+	    $EAcontent2 = Get-ChildItem -Path $EALogs1 -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    } 
+    elseif (Test-path $EALogs2) {
+	    $EAcontent2 = Get-ChildItem -Path $EALogs2 -Recurse | Sort-Object name -desc | Select-Object -expand Fullname
+    }
+
+    foreach ($NewEAcontent2 in $EAcontent2) {
+	    $NewItem = New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+	    Get-Content -Path "$NewEAcontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' -replace ",", "." } | Add-Content -Path "$ErrorPath\temp.txt"
+	    $content27 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse
+	    $entries = $content27 | Select-String -Pattern $pattern | ForEach-Object {
+		    [pscustomobject]@{ 
+			    'Date' = [datetime]::Parse($_.Matches[0].Value) 
+			    'Line' = $_.LineNumber 
+			    'Text' = $_.Line
+		    }
+	    }
+	    $filtered = $entries | Where-Object { $_.Date -ge $start -and $_.Date -le $end } | Sort-Object Date 
+	    if ($filtered) {
+		    $first = $filtered[0].Line - 1 
+		    $last = $filtered[-1].Line - 1 
+		    $content27[$first..$last] 
+	    }
+	    if ($filtered.length -eq 0) {
+		    Write-Host "empty"
+	    } 
+	    else {
+		    Add-Content "$ErrorPath\$textfile.txt" -Value $NewEAcontent2
+	    }	
+	    Add-Content "$ErrorPath\$textfile.txt" -value $filtered.text, "`n"
+	    Remove-Item "$ErrorPath\temp.txt"
+    }
+
+    if (Test-path $InstallerLogs) {
+	    $Installercontent2 = Get-ChildItem -Path $InstallerLogs -Recurse -File | Sort-Object name -desc | Select-Object -expand Fullname
+	    foreach ($NewInstallercontent2 in $Installercontent2) {
+		    $NewItem = New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+		    Get-Content -Path "$NewInstallercontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' -replace ",", "." } | Add-Content -Path "$ErrorPath\temp.txt"
+		    $content28 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse
+		    $entries = $content28 | Select-String -Pattern $pattern | ForEach-Object {
+			    [pscustomobject]@{ 
+				    'Date' = [datetime]::Parse($_.Matches[0].Value) 
+				    'Line' = $_.LineNumber 
+				    'Text' = $_.Line
+			    }
+		    }
+		    $filtered = $entries | Where-Object { $_.Date -ge $start -and $_.Date -le $end } | Sort-Object Date 
+		    if ($filtered) {
+			    $first = $filtered[0].Line - 1 
+			    $last = $filtered[-1].Line - 1 
+			    $content28[$first..$last] 
+		    }
+		    if ($filtered.length -eq 0) { 
+			    Write-Host "empty"
+		    } 
+		    else {
+			    Add-Content "$ErrorPath\$textfile.txt" -Value $NewInstallercontent2
+		    }	
+		    Add-Content "$ErrorPath\$textfile.txt" -value $filtered.text, "`n"
+		    Remove-Item "$ErrorPath\temp.txt"
+	    }
+    }
+    else { Write-Host "Files are not existed" }
+
+    $CCcontent2 = Get-ChildItem -Include ComputerControl*.* -Path $LogPath -Recurse | Sort-Object name -desc | Where-Object fullname -NotLike "$ErrorPath\ComputerControl.txt" | Select-Object -expand Fullname
+    foreach ($NewCCcontent2 in $CCcontent2) {
+	    $NewItem = New-Item -Path $ErrorPath -Name "temp.txt" -ItemType "file"
+	    Get-Content -Path "$NewCCcontent2" -Raw | ForEach-Object -Process { $_ -replace "- `r`n", '- ' -replace ",", "." } | Add-Content -Path "$ErrorPath\temp.txt"
+	    $content29 = Get-ChildItem -path "$ErrorPath\temp.txt" -Recurse
+	    $entries = $content29 | Select-String -Pattern $pattern | ForEach-Object {
+		    [pscustomobject]@{ 
+			    'Date' = [datetime]::Parse($_.Matches[0].Value) 
+			    'Line' = $_.LineNumber 
+			    'Text' = $_.Line
+		    }
+	    }
+	    $filtered = $entries | Where-Object { $_.Date -ge $start -and $_.Date -le $end } | Sort-Object Date 
+	    if ($filtered) {
+		    $first = $filtered[0].Line - 1 
+		    $last = $filtered[-1].Line - 1 
+		    $content29[$first..$last] 
+	    }
+	    if ($filtered.length -eq 0) {
+		    Write-Host "empty"
+	    } 
+	    else {
+		    Add-Content "$ErrorPath\$textfile.txt" -Value $NewCCcontent2
+	    }	
+	    Add-Content "$ErrorPath\$textfile.txt" -value $filtered.text, "`n"
+	    Remove-Item "$ErrorPath\temp.txt"
+    }
+
 }
 
 if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     $x = $textBox.Text
     $x2 = $textBox2.Text
     $x3 = $textBox3.Text
+    $x4 = $textBox4.Text
+    $x5 = $textBox5.Text
     $x
     $x2
     $x3
+    $x4
+    $x5
 
     if ($x2 -match "1") { 
         GetETLatestErrorLogs
@@ -635,6 +922,9 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         if ("$x3") {
             TimeStamp
         }
-        write-host("N/A")
+        elseif("$x4" -and "$x5") {
+            TimeStampBetween
+        }
     }
+
 }
