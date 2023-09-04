@@ -1,4 +1,4 @@
-﻿#_V0.7
+﻿#_V0.71
 #Forces powershell to run as an admin
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 { Start-Process powershell.exe "-NoProfile -Windowstyle Hidden -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
@@ -150,6 +150,7 @@ Function GetETLatestErrorLogs {
             Remove-Item "$ErrorPath\temp.txt"
         }
     }
+    [System.Windows.MessageBox]::Show('Done')
 }
 
 Function AllEALogs {
@@ -193,6 +194,7 @@ Function AllEALogs {
         Add-Content -path "$ErrorPath\EALogs.txt" -Value $content2, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
+    [System.Windows.MessageBox]::Show('Done')
 }
 
 Function AllTTechLogs {
@@ -317,6 +319,7 @@ Function AllTTechLogs {
         Add-Content $file -value $content8, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
+    [System.Windows.MessageBox]::Show('Done')
 }
 
 Function InstallerLogs {
@@ -352,6 +355,7 @@ Function InstallerLogs {
         }
     }
     else { Write-Host "Files are not existed" }
+    [System.Windows.MessageBox]::Show('Done')
 }
 
 Function OtherLogs {
@@ -415,6 +419,7 @@ Function OtherLogs {
         Add-Content -path "$ErrorPath\errorlogs.txt" -Value $content11, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
+    [System.Windows.MessageBox]::Show('Done')
 }
 
 Function TimeStamp {
@@ -585,6 +590,7 @@ Function TimeStamp {
         Add-Content -path $ErrorFile -Value $content20, "`n"
         Remove-Item "$ErrorPath\temp.txt"
     }
+    [System.Windows.MessageBox]::Show('Done')
 }
 
 Function TimeStampBetween {
@@ -888,7 +894,7 @@ Function TimeStampBetween {
 	    Add-Content "$ErrorPath\$textfile.txt" -value $filtered.text, "`n"
 	    Remove-Item "$ErrorPath\temp.txt"
     }
-
+    [System.Windows.MessageBox]::Show('Done')
 }
 
 if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
