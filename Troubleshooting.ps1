@@ -1,5 +1,5 @@
 ﻿#File version 
-$fileversion = "Troubleshooting 0.2"
+$fileversion = "Troubleshooting 0.20"
 
 #Forces powershell to run as an admin
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
