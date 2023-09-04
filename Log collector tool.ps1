@@ -1,4 +1,4 @@
-﻿#_V0.1
+﻿#_V0.2
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
