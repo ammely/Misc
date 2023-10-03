@@ -1,7 +1,7 @@
 ﻿$PSScriptRoot
 $installerName = Read-Host -Prompt 'ENTER the name of OLI'
     
-$fpath = Get-ChildItem -Path $PSScriptRoot -Filter "$fileversion" -Recurse -erroraction SilentlyContinue | Select-Object -expand Fullname | Split-Path
+$fpath = Split-Path -Path $PSScriptRoot -Parent
 $regPath = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\"
 
 for ($i = 1; $i -le 5; $i++) {
